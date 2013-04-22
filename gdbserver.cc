@@ -85,6 +85,14 @@ Context::put_mem(char value)
 }
 
 const std::string &
+Context::rd_one_reg(int reg_no)
+{
+    reg_str.empty();
+    rd_reg(reg_no);
+    return reg_str;
+}
+
+const std::string &
 Context::rd_all_regs(void)
 {
     reg_str.clear();
@@ -376,6 +384,15 @@ Server::handle_m(const payload_type &payload)
 }
 
 void
+Server::handle_p(const payload_type &payload)
+{
+    int reg_no;
+    
+    reg_no = strtol(payload.substr(1, payload.size() - 1).c_str(), NULL, 16);
+    send_payload(context->rd_one_reg(reg_no));
+}
+
+void
 Server::handle_q(const payload_type &payload)
 {
     if (payload.substr(1, 9) == "Supported")
@@ -425,6 +442,9 @@ Server::wait_for_command(void)
             break;
         case 'm':
             handle_m(payload);
+            break;
+        case 'p':
+            handle_p(payload);
             break;
         case 'q':
             handle_q(payload);

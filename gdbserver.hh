@@ -100,7 +100,9 @@ namespace gdb {
         /** */
         virtual int num_regs(void) = 0;
 
+        const std::string& rd_one_reg(int reg_no);
         const std::string& rd_all_regs(void);
+
         const std::string& rd_mem(addr_type addr, size_type size);
                 
     protected:
@@ -169,6 +171,7 @@ namespace gdb {
         void handle_g(const payload_type &payload);
         void handle_H(const payload_type &payload);
         void handle_m(const payload_type &payload);
+        void handle_p(const payload_type &payload);
         void handle_q(const payload_type &payload);
         void handle_qm(const payload_type &payload);
 
