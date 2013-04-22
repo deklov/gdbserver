@@ -177,8 +177,7 @@ namespace gdb {
         void handle_p(const payload_type &payload);
         void handle_q(const payload_type &payload);
         void handle_v(const payload_type &payload);
-        void handle_z(const payload_type &payload);
-        void handle_Z(const payload_type &payload);
+        void handle_z(const payload_type &payload, bool set);
         void handle_qm(const payload_type &payload);
 
     private:

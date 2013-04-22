@@ -478,7 +478,7 @@ Server::handle_v(const payload_type &payload)
 }
 
 void
-Server::handle_z(const payload_type &payload)
+Server::handle_z(const payload_type &payload, bool set)
 {
     if (payload.substr(1, 1) == "0") {
         vector<string> tok = tokenize_str(payload.substr(2), ",");
@@ -486,28 +486,15 @@ Server::handle_z(const payload_type &payload)
 
         uint64_t addr = str_to_int(tok[0]);
         uint64_t size = str_to_int(tok[1]);
-        del_breakpoint(addr, size);
+
+        if (set) 
+            set_breakpoint(addr, size);
+        else
+            del_breakpoint(addr, size);
 
         send_ok();
     } else
         THROW("Unsupported 'z' command");
-
-}
-
-void
-Server::handle_Z(const payload_type &payload)
-{
-    if (payload.substr(1, 1) == "0") {
-        vector<string> tok = tokenize_str(payload.substr(2), ",");
-        EXPECT(tok.size() == 2, "Packet format error (Z0)");
-
-        uint64_t addr = str_to_int(tok[0]);
-        uint64_t size = str_to_int(tok[1]);
-        set_breakpoint(addr, size);
-
-        send_ok();
-    } else
-        THROW("Unsupported 'Z' command");
 }
 
 void
@@ -546,10 +533,10 @@ Server::wait_for_command(void)
                 handle_v(payload);
                 break;
             case 'z':
-                handle_z(payload);
+                handle_z(payload, 0);
                 break;
             case 'Z':
-                handle_Z(payload);
+                handle_z(payload, 1);
                 break;
             case '?':
                 handle_qm(payload);
