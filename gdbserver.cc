@@ -108,7 +108,7 @@ Context::put_mem(char value)
 const std::string &
 Context::rd_one_reg(int reg_no)
 {
-    reg_str.empty();
+    reg_str.clear();
     rd_reg(reg_no);
     return reg_str;
 }
@@ -349,9 +349,9 @@ Server::send_empty(void) const
 }
 
 void
-Server::send_zero(void) const
+Server::send_trapped(void) const
 {
-    send_payload("0");
+    send_payload("S05");
 }
 
 int
@@ -475,6 +475,23 @@ Server::handle_v(const payload_type &payload)
 }
 
 void
+Server::handle_z(const payload_type &payload)
+{
+    if (payload.substr(1, 1) == "0") {
+        vector<string> tok = tokenize_str(payload.substr(2), ",");
+        EXPECT(tok.size() == 2, "Packet format error (Z0)");
+
+        uint64_t addr = str_to_int(tok[0]);
+        uint64_t size = str_to_int(tok[1]);
+        del_breakpoint(addr, size);
+
+        send_ok();
+    } else
+        THROW("Unsupported 'z' command");
+
+}
+
+void
 Server::handle_Z(const payload_type &payload)
 {
     if (payload.substr(1, 1) == "0") {
@@ -493,65 +510,69 @@ Server::handle_Z(const payload_type &payload)
 void
 Server::handle_qm(const payload_type &payload)
 {
-    send_payload("S05");
+    send_trapped();
 }
 
 
 void
 Server::wait_for_command(void)
 {
-    payload_type payload;
-    recv_payload(payload);
+    do {
+        payload_type payload;
+        recv_payload(payload);
 
-    cout << "wait_for_comman: payload: " << payload
-         << " target_state: " << target_state << endl;
+        cout << "wait_for_comman: payload: " << payload
+             << " target_state: " << target_state << endl;
 
-    switch(payload[0]) {
-        case 'g':
-            handle_g(payload);
-            break;
-        case 'H':
-            handle_H(payload);
-            break;
-        case 'm':
-            handle_m(payload);
-            break;
-        case 'p':
-            handle_p(payload);
-            break;
-        case 'q':
-            handle_q(payload);
-            break;
-        case 'v':
-            handle_v(payload);
-            break;
-        case 'Z':
-            handle_Z(payload);
-            break;
-        case '?':
-            handle_qm(payload);
-            break;
-        default:
-            THROW("Unsupported command");
-            break;
-    }
+        switch(payload[0]) {
+            case 'g':
+                handle_g(payload);
+                break;
+            case 'H':
+                handle_H(payload);
+                break;
+            case 'm':
+                handle_m(payload);
+                break;
+            case 'p':
+                handle_p(payload);
+                break;
+            case 'q':
+                handle_q(payload);
+                break;
+            case 'v':
+                handle_v(payload);
+                break;
+            case 'z':
+                handle_z(payload);
+                break;
+            case 'Z':
+                handle_Z(payload);
+                break;
+            case '?':
+                handle_qm(payload);
+                break;
+            default:
+                THROW("Unsupported command");
+                break;
+        }
+    } while (target_state == TARGET_STATE_HALTED);
 }
 
-
 void
-Server::update(uint64_t next_pc)
+Server::update(addr_type next_pc)
 {
     switch (target_state) {
         case TARGET_STATE_HALTED:
-            do { 
-                wait_for_command();
-            } while (target_state == TARGET_STATE_HALTED);
+            wait_for_command();
             break;
 
         case TARGET_STATE_RUNNING:
             if (breakpoint_set.count(next_pc)) {
                 target_state = TARGET_STATE_HALTED;
-                send_payload("S05");
+                send_trapped(); /* Let the client know that we stopped */
+
+                wait_for_command();
             }
             break;
 

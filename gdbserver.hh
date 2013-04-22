@@ -123,20 +123,16 @@ namespace gdb {
     /** */
     class Server {
     public:
-        /* TODO: This constructor does no cleanup after itslef in the case of
-         * an error and is not exception safe. Fix this. It does however report
-         * all errors.
-         */
+        typedef uint64_t addr_type;
+        typedef uint64_t addr_diff_type;
+
         Server(context_ptr context, const char *port = "1234");
 
-        void update(uint64_t next_pc);
+        void update(addr_type next_pc);
 
     private:
         typedef std::string payload_type;
         typedef std::string packet_type;
-
-        typedef uint64_t addr_type;
-        typedef uint64_t addr_diff_type;
 
         enum {
             TARGET_STATE_HALTED = 0,
@@ -163,7 +159,7 @@ namespace gdb {
 
         void send_ok(void) const;
         void send_empty(void) const;
-        void send_zero(void) const;
+        void send_trapped(void) const;
 
         bool extract_payload(const packet_type &, payload_type &) const;
 
@@ -181,6 +177,7 @@ namespace gdb {
         void handle_p(const payload_type &payload);
         void handle_q(const payload_type &payload);
         void handle_v(const payload_type &payload);
+        void handle_z(const payload_type &payload);
         void handle_Z(const payload_type &payload);
         void handle_qm(const payload_type &payload);
 
