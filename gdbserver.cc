@@ -40,6 +40,9 @@ using namespace boost;
 
 namespace gdb {
 
+/*
+ * Helper functions
+ */
 static char
 int_to_hex(int value)
 {
@@ -57,6 +60,24 @@ bin_to_hex(const char *bin, size_t bin_size)
         hex.push_back(int_to_hex(c >> 0 & 0xf));
     }
     return hex;
+}
+
+/* TODO Cleanup and move elsewhere */
+static std::vector<std::string>
+tokenize_str(const std::string &str, const char *sep_)
+{
+    boost::char_separator<char> sep(sep_);
+    boost::tokenizer< boost::char_separator<char> > tokens(str, sep);
+    vector<string> p(tokens.begin(), tokens.end());
+    return p;
+}
+ 
+/* TODO Move elsewhere */
+static unsigned long
+str_to_int(const std::string &str, int base = 16)
+{
+    /* TODO Endianess */
+    return strtoull(str.c_str(), NULL, base);
 }
 
 void
@@ -350,6 +371,29 @@ Server::checksum_msb_ascii(int csum) const
 }
 
 void
+Server::set_breakpoint(addr_type addr, addr_diff_type size)
+{
+    for (addr_diff_type i = 0; i < size; i ++)
+        breakpoint_set.insert(addr + i);
+}
+
+void
+Server::del_breakpoint(addr_type addr, addr_diff_type size)
+{
+    for (addr_diff_type i = 0; i < size; i ++)
+        breakpoint_set.erase(addr + i);
+}
+
+bool
+Server::has_breakpoint(addr_type addr, addr_diff_type size)
+{
+    int c = 0;
+    for (addr_diff_type i = 0; i < size; i++)
+        c += breakpoint_set.count(addr + i);
+    return c > 0;
+}
+
+void
 Server::handle_g(const payload_type &payload)
 {
     send_payload(context->rd_all_regs());
@@ -369,16 +413,11 @@ Server::handle_H(const payload_type &payload)
 void
 Server::handle_m(const payload_type &payload)
 {
-    /* TODO Cleanup this function */
-    boost::char_separator<char> sep("m,");
-    boost::tokenizer< boost::char_separator<char> > tokens(payload, sep);
+    vector<string> tok = tokenize_str(payload.substr(2), ",");
+    EXPECT(tok.size() == 2, "Packet format error (Z0)");
 
-    vector<string> p(tokens.begin(), tokens.end());
-    EXPECT(p.size() == 2, "Packet format error (m)");
-
-    /* TODO Endianess */
-    uint64_t addr = strtoull(p[0].c_str(), NULL, 16);
-    uint64_t size = strtoull(p[1].c_str(), NULL, 16);
+    uint64_t addr = str_to_int(tok[0]);
+    uint64_t size = str_to_int(tok[1]);
 
     send_payload(context->rd_mem(addr, size));
 }
@@ -399,7 +438,7 @@ Server::handle_q(const payload_type &payload)
         send_payload("PacketSize=1024");
 
     else if (payload.substr(1, 7) == "Offsets")
-        send_payload("Text=1000;Data=2000;Bss=3000");
+        send_payload("Text=0;Data=0;Bss=0");
 
     else if (payload.substr(1, 8) == "Attached")
         send_payload("");
@@ -421,6 +460,22 @@ void
 Server::handle_qm(const payload_type &payload)
 {
     send_payload("S05");
+}
+
+void
+Server::handle_Z(const payload_type &payload)
+{
+    if (payload.substr(1, 1) == "0") {
+        vector<string> tok = tokenize_str(payload.substr(2), ",");
+        EXPECT(tok.size() == 2, "Packet format error (Z0)");
+
+        uint64_t addr = str_to_int(tok[0]);
+        uint64_t size = str_to_int(tok[1]);
+        set_breakpoint(addr, size);
+
+        send_ok();
+    } else
+        THROW("Unsupported 'Z' command");
 }
 
 bool
@@ -449,6 +504,9 @@ Server::wait_for_command(void)
         case 'q':
             handle_q(payload);
             break;
+        case 'Z':
+            handle_Z(payload);
+            break;
         case '?':
             handle_qm(payload);
             break;
@@ -471,6 +529,8 @@ Server::update(uint64_t next_pc)
             break;
         case TARGET_STATE_RUNNING:
             /* Not supported yet */
+            if (breakpoint_set.count(next_pc))
+                target_state = TARGET_STATE_HALTED;
             assert(0);
             break;
         default:
