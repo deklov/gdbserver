@@ -190,8 +190,14 @@ Server::send_payload(const payload_type &payload, int tries) const
         for (; i != e; i++) {
             char c = *i;
 
-            if (0) {
-                /* TODO Escape characters */
+            /* Escape '$', '#' and '}' */
+            switch (c) {
+                case '$':
+                case '#':
+                case '}':
+                    packet.push_back('}');
+                    packet.push_back(c ^ 0x20);
+                    break;
             }
 
             packet.push_back(c);
@@ -280,8 +286,9 @@ Server::extract_payload(const packet_type &packet, payload_type &payload) const
     for (; i != e && *i != '#'; i++){
         char c = *i;
 
-        if (0) {
-            /* TODO Handle escaped characters */
+        /* Handle escaped characters */
+        if (c == '}') {
+            c = *(++i) ^ 0x20;
         }
         payload.push_back(c);
     }
