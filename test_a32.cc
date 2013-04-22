@@ -37,9 +37,9 @@ class FakeARMv7Context : public Context {
 public:
     FakeARMv7Context()
     {
-#define ADDR_START  0x8394
-#define ADDR_TARGET 0x83a0
-#define ADDR_BRANCH 0x83b0
+#define ADDR_START  (0x8394)
+#define ADDR_TARGET (0x83a0)
+#define ADDR_BRANCH (0x83b0 + 4)
         static char mem_[] = {
             0x04, 0xb0, 0x2d, 0xe5,  /* 8394:  push  {fp}            */
             0x00, 0xb0, 0x8d, 0xe2,  /* 8398:  add   fp, sp, #0      */
@@ -47,7 +47,7 @@ public:
             0x08, 0x20, 0x1b, 0xe5,  /* 83a0:  ldr   r2, [fp, #-8]   */
             0x0c, 0x30, 0x1b, 0xe5,  /* 83a4:  ldr   r3, [fp, #-12]  */
             0x03, 0x30, 0x82, 0xe0,  /* 83a8:  add   r3, r2, r3      */
-            0x10, 0x30, 0x0b, 0x50,  /* 83ac:  str   r3, [fp, #-16]  */
+            0x10, 0x30, 0x0b, 0xe5,  /* 83ac:  str   r3, [fp, #-16]  */
             0xfa, 0xff, 0xff, 0xea,  /* 83b0:  b     83a0            */
         };
         mem = mem_;
@@ -62,7 +62,7 @@ public:
 
     void rd_mem(uint64_t addr)
     {
-        if (ADDR_START <= addr && addr < ADDR_BRANCH) {
+        if (ADDR_START <= addr && addr <= ADDR_BRANCH) {
             addr -= ADDR_START;
             put_mem(mem[addr]);
         } else
@@ -91,7 +91,7 @@ main(int argc, char **argv)
         uint64_t pc = ADDR_START;
 
         do {
-            ctx->mem[ARMv7_REG_PC] = pc;
+            ctx->regs[ARMv7_REG_PC] = pc;
             server.update(pc);
             pc += 4;
             if (pc == ADDR_BRANCH)
