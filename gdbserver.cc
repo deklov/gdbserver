@@ -413,7 +413,7 @@ Server::handle_H(const payload_type &payload)
 void
 Server::handle_m(const payload_type &payload)
 {
-    vector<string> tok = tokenize_str(payload.substr(2), ",");
+    vector<string> tok = tokenize_str(payload.substr(1), ",");
     EXPECT(tok.size() == 2, "Packet format error (Z0)");
 
     uint64_t addr = str_to_int(tok[0]);
@@ -461,6 +461,8 @@ Server::handle_v(const payload_type &payload)
 {
     if (payload.substr(1, 5) == "Cont?")
         send_payload("vCont;s;S;c;C");
+    else if (payload.substr(1, 6) == "Cont;c")
+        target_state = TARGET_STATE_RUNNING;
     else
         THROW("Unsupported 'v' command");
 }
@@ -488,15 +490,14 @@ Server::handle_qm(const payload_type &payload)
 }
 
 
-bool
+void
 Server::wait_for_command(void)
 {
-    bool expect_more = true;
     payload_type payload;
-
     recv_payload(payload);
 
-    std::cout << "wait_for_comman: payload: " << payload << std::endl;
+    cout << "wait_for_comman: payload: " << payload
+         << " target_state: " << target_state << endl;
 
     switch(payload[0]) {
         case 'g':
@@ -527,8 +528,6 @@ Server::wait_for_command(void)
             THROW("Unsupported command");
             break;
     }
-
-    return expect_more;
 }
 
 
@@ -537,15 +536,18 @@ Server::update(uint64_t next_pc)
 {
     switch (target_state) {
         case TARGET_STATE_HALTED:
-            while (wait_for_command())
-                ;
+            do { 
+                wait_for_command();
+            } while (target_state == TARGET_STATE_HALTED);
             break;
+
         case TARGET_STATE_RUNNING:
-            /* Not supported yet */
-            if (breakpoint_set.count(next_pc))
+            if (breakpoint_set.count(next_pc)) {
                 target_state = TARGET_STATE_HALTED;
-            assert(0);
+                send_payload("S05");
+            }
             break;
+
         default:
             assert(0);
     }

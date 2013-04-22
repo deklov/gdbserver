@@ -145,7 +145,7 @@ namespace gdb {
 
         static const size_t PACKET_SIZE = 1024;
 
-        bool wait_for_command(void);
+        void wait_for_command(void);
 
         void send_payload(const payload_type &payload, int tries = 1) const;
         void send_packet(const packet_type &packet) const;
