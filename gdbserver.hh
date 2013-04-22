@@ -180,8 +180,9 @@ namespace gdb {
         void handle_m(const payload_type &payload);
         void handle_p(const payload_type &payload);
         void handle_q(const payload_type &payload);
-        void handle_qm(const payload_type &payload);
+        void handle_v(const payload_type &payload);
         void handle_Z(const payload_type &payload);
+        void handle_qm(const payload_type &payload);
 
     private:
         context_ptr context;

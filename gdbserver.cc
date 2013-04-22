@@ -457,9 +457,12 @@ Server::handle_q(const payload_type &payload)
 }
 
 void
-Server::handle_qm(const payload_type &payload)
+Server::handle_v(const payload_type &payload)
 {
-    send_payload("S05");
+    if (payload.substr(1, 5) == "Cont?")
+        send_payload("vCont;s;S;c;C");
+    else
+        THROW("Unsupported 'v' command");
 }
 
 void
@@ -477,6 +480,13 @@ Server::handle_Z(const payload_type &payload)
     } else
         THROW("Unsupported 'Z' command");
 }
+
+void
+Server::handle_qm(const payload_type &payload)
+{
+    send_payload("S05");
+}
+
 
 bool
 Server::wait_for_command(void)
@@ -503,6 +513,9 @@ Server::wait_for_command(void)
             break;
         case 'q':
             handle_q(payload);
+            break;
+        case 'v':
+            handle_v(payload);
             break;
         case 'Z':
             handle_Z(payload);
