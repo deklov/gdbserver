@@ -127,6 +127,7 @@ namespace gdb {
         typedef uint64_t addr_diff_type;
 
         Server(context_ptr context, const char *port = "1234");
+        ~Server(void);
 
         void update(addr_type next_pc);
 

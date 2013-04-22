@@ -174,7 +174,11 @@ Server::Server(context_ptr context, const char *port)
     
     send_ack();
     EXPECT(got_ack(), "Failed to establish connection with client");
+}
 
+Server::~Server(void)
+{
+    close(socket_fd);
 }
 
 void
