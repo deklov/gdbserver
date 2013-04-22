@@ -62,6 +62,13 @@ bin_to_hex(const char *bin, size_t bin_size)
     return hex;
 }
 
+static unsigned long
+str_to_int(const std::string &str, int base = 16)
+{
+    /* TODO Handle different endianess */
+    return strtoull(str.c_str(), NULL, base);
+}
+
 /* TODO Cleanup and move elsewhere */
 static std::vector<std::string>
 tokenize_str(const std::string &str, const char *sep_)
@@ -72,14 +79,6 @@ tokenize_str(const std::string &str, const char *sep_)
     return p;
 }
  
-/* TODO Move elsewhere */
-static unsigned long
-str_to_int(const std::string &str, int base = 16)
-{
-    /* TODO Endianess */
-    return strtoull(str.c_str(), NULL, base);
-}
-
 void
 Context::put_reg(uint16_t value)
 {
@@ -273,13 +272,13 @@ Server::recv_packet(char *buf, size_t buf_size) const
     return size;
 }
 
-
 bool
 Server::extract_payload(const packet_type &packet, payload_type &payload) const
 {
     std::string::const_iterator i = packet.begin();
     std::string::const_iterator e = packet.end();
 
+    /* Packet must begin with a '$' */
     if (i == e || *(i++) != '$')
         return false;
 
@@ -293,9 +292,11 @@ Server::extract_payload(const packet_type &packet, payload_type &payload) const
         payload.push_back(c);
     }
 
+    /* Payload must be followed by a '#' */
     if (i == e || *(i++) != '#')
         return false;
 
+    /* Extract and verify checksum */
     if (i == e)
         return false;
     char checksum_msb = *(i++);
@@ -521,8 +522,7 @@ Server::wait_for_command(void)
         payload_type payload;
         recv_payload(payload);
 
-        cout << "wait_for_comman: payload: " << payload
-             << " target_state: " << target_state << endl;
+        cout << "wait_for_comman: payload: " << payload << endl;
 
         switch(payload[0]) {
             case 'g':
