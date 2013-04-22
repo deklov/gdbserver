@@ -437,9 +437,7 @@ Server::handle_m(const payload_type &payload)
 void
 Server::handle_p(const payload_type &payload)
 {
-    int reg_no;
-    
-    reg_no = strtol(payload.substr(1, payload.size() - 1).c_str(), NULL, 16);
+    int reg_no = str_to_int(payload.substr(1, payload.size() - 1));
     send_payload(context->rd_one_reg(reg_no));
 }
 
