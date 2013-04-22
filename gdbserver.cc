@@ -381,15 +381,19 @@ Server::checksum_msb_ascii(int csum) const
 void
 Server::set_breakpoint(addr_type addr, addr_diff_type size)
 {
-    for (addr_diff_type i = 0; i < size; i ++)
+    for (addr_diff_type i = 0; i < size; i ++) {
+        assert(breakpoint_set.count(addr + i) == 0);
         breakpoint_set.insert(addr + i);
+    }
 }
 
 void
 Server::del_breakpoint(addr_type addr, addr_diff_type size)
 {
-    for (addr_diff_type i = 0; i < size; i ++)
+    for (addr_diff_type i = 0; i < size; i ++) {
+        assert(breakpoint_set.count(addr + i) == 1);
         breakpoint_set.erase(addr + i);
+    }
 }
 
 bool
