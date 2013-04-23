@@ -449,7 +449,7 @@ void
 Server::handle_q(const payload_type &payload)
 {
     if (payload.substr(1, 9) == "Supported")
-        send_payload("PacketSize=1024");
+        send_payload("PacketSize=1024;qXfer:features:read+");
 
     else if (payload.substr(1, 7) == "Offsets")
         send_payload("Text=0;Data=0;Bss=0");
@@ -465,6 +465,9 @@ Server::handle_q(const payload_type &payload)
 
     else if (payload.substr(1, 8) == "TStatus")
         send_empty();
+
+    else if (payload.substr(1, 29) == "Xfer:features:read:target.xml")
+        send_payload("l" + context->xml_core());
 
     else
         THROW("Unsupported 'q' command");

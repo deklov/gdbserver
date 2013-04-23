@@ -41,6 +41,23 @@
 #include <stdint.h>
 #include <errno.h>
 
+#define THROW(msg) do {                                          \
+    std::stringstream s;                                         \
+    s << "Error:" << __FILE__ << ":" << __LINE__ << ": " << msg; \
+    throw exception(s.str());                                    \
+} while(0)
+
+#define EXPECT(c, m) do {               \
+    if (!(c))                           \
+        THROW(m);                       \
+} while (0)
+
+#define EXPECT_ERRNO(c) do {            \
+    if (!(c))                           \
+        THROW(std::strerror(errno));    \
+} while (0)
+
+
 namespace gdb {
 
     class exception : public std::exception {
@@ -60,22 +77,6 @@ namespace gdb {
         std::string msg;
     };
 
-#define THROW(msg) do {                                          \
-    std::stringstream s;                                         \
-    s << "Error:" << __FILE__ << ":" << __LINE__ << ": " << msg; \
-    throw exception(s.str());                                    \
-} while(0)
-
-#define EXPECT(c, m) do {               \
-    if (!(c))                           \
-        THROW(m);                       \
-} while (0)
-
-#define EXPECT_ERRNO(c) do {            \
-    if (!(c))                           \
-        THROW(std::strerror(errno));    \
-} while (0)
-
     enum ARMv7_RegisterNames {
         ARMv7_REG_R0 = 0,
         ARMv7_REG_R1,  ARMv7_REG_R2,  ARMv7_REG_R3,  ARMv7_REG_R4,
@@ -89,6 +90,31 @@ namespace gdb {
         ARMv7_NUM_REGS
     };
 
+    /* TODO Move to .cc file and declare as extern */
+    static const std::string armv7_xml_core =
+        "<?xml version=\"1.0\"?>"
+        "<!DOCTYPE feature SYSTEM \"gdb-target.dtd\">"
+        "<feature name=\"org.gnu.gdb.arm.core\">"
+        "  <reg name=\"r0\"   bitsize=\"32\"/>"
+        "  <reg name=\"r1\"   bitsize=\"32\"/>"
+        "  <reg name=\"r2\"   bitsize=\"32\"/>"
+        "  <reg name=\"r3\"   bitsize=\"32\"/>"
+        "  <reg name=\"r4\"   bitsize=\"32\"/>"
+        "  <reg name=\"r5\"   bitsize=\"32\"/>"
+        "  <reg name=\"r6\"   bitsize=\"32\"/>"
+        "  <reg name=\"r7\"   bitsize=\"32\"/>"
+        "  <reg name=\"r8\"   bitsize=\"32\"/>"
+        "  <reg name=\"r9\"   bitsize=\"32\"/>"
+        "  <reg name=\"r10\"  bitsize=\"32\"/>"
+        "  <reg name=\"r11\"  bitsize=\"32\"/>"
+        "  <reg name=\"r12\"  bitsize=\"32\"/>"
+        "  <reg name=\"sp\"   bitsize=\"32\" type=\"data_ptr\"/>"
+        "  <reg name=\"lr\"   bitsize=\"32\"/>"
+        "  <reg name=\"pc\"   bitsize=\"32\" type=\"code_ptr\"/>"
+        "  <reg name=\"cpsr\" bitsize=\"32\" regnum=\"25\"/>"
+        "</feature>";
+
+
     class Context {
     public:
         typedef uint64_t addr_type;
@@ -100,12 +126,14 @@ namespace gdb {
         virtual void rd_mem(uint64_t addr) = 0;
         /** */
         virtual int num_regs(void) = 0;
+        /** */
+        virtual const std::string& xml_core(void) = 0;
 
         const std::string& rd_one_reg(int reg_no);
         const std::string& rd_all_regs(void);
 
         const std::string& rd_mem(addr_type addr, size_type size);
-                
+
     protected:
         void put_reg(uint16_t value);
         void put_reg(uint32_t value);

@@ -79,6 +79,11 @@ public:
         return ARMv7_NUM_REGS;
     }
        
+    const std::string& xml_core(void)
+    {
+        return armv7_xml_core;
+    }
+
 public:
     uint32_t regs[ARMv7_NUM_REGS];
     char *text_mem;
