@@ -130,6 +130,16 @@ Context::rd_mem(addr_type addr, size_type size)
     return mem_str;
 }
 
+bool
+Context::wr_mem_size(addr_type addr, size_type size, const char *data)
+{
+    bool success = true;
+    for (int i = 0; i < size; i++)
+        success = success && wr_mem(addr + i, data[i]);
+    cout << success << endl;
+    return success;
+}
+
 
 /* TODO: This constructor does not properly cleanup after itslef in the case
  * of an error and is not exception safe. Fix this. It does however report
@@ -359,6 +369,14 @@ Server::send_trapped(void) const
     send_payload("S05");
 }
 
+void
+Server::send_error(int error) const
+{
+    stringstream ss;
+    ss << "E" << error;
+    send_payload(ss.str());
+}
+
 int
 Server::compute_checksum(const payload_type &payload) const
 {
@@ -427,15 +445,24 @@ Server::handle_H(const payload_type &payload)
 }
 
 void
-Server::handle_m(const payload_type &payload)
+Server::handle_m(const payload_type &payload, bool write)
 {
-    vector<string> tok = tokenize_str(payload.substr(1), ",");
-    EXPECT(tok.size() == 2, "Packet format error (Z0)");
+    vector<string> tok = tokenize_str(payload.substr(1), ",:");
+    EXPECT(tok.size() >= 2, "Packet format error (m/M)");
 
-    uint64_t addr = str_to_int(tok[0]);
-    uint64_t size = str_to_int(tok[1]);
+    addr_type addr = str_to_int(tok[0]);
+    addr_type size = str_to_int(tok[1]);
 
-    send_payload(context->rd_mem(addr, size));
+    if (!write)
+        send_payload(context->rd_mem(addr, size));
+    else {
+        uint64_t data = str_to_int(tok[2]);
+
+        if (context->wr_mem_size(addr, size, (const char *)&data))
+            send_ok();
+        else
+            send_error(14);
+    }
 }
 
 void
@@ -485,6 +512,13 @@ Server::handle_v(const payload_type &payload)
 }
 
 void
+Server::handle_X(const payload_type &payload)
+{
+    /* This tells the client to use the M command instead */
+    send_empty();
+}
+
+void
 Server::handle_z(const payload_type &payload, bool set)
 {
     if (payload.substr(1, 1) == "0") {
@@ -528,7 +562,10 @@ Server::wait_for_command(void)
                 handle_H(payload);
                 break;
             case 'm':
-                handle_m(payload);
+                handle_m(payload, 0);
+                break;
+            case 'M':
+                handle_m(payload, 1);
                 break;
             case 'p':
                 handle_p(payload);
@@ -544,6 +581,9 @@ Server::wait_for_command(void)
                 break;
             case 'Z':
                 handle_z(payload, 1);
+                break;
+            case 'X':
+                handle_X(payload);
                 break;
             case '?':
                 handle_qm(payload);

@@ -66,16 +66,26 @@ public:
         put_reg(regs[reg_no]);
     }
 
-    void rd_mem(uint64_t addr)
+    void rd_mem(addr_type addr)
     {
         if (TEXT_START <= addr && addr <= TEXT_END) {
             addr -= TEXT_START;
             put_mem(text_mem[addr]);
-        } else if (DATA_START <= addr && addr <= DATA_END) {
+        } else if (DATA_START <= addr && addr < DATA_END) {
             addr -= DATA_START;
             put_mem(data_mem[addr]);
         } else 
             put_mem(0);
+    }
+
+    bool wr_mem(addr_type addr, char data)
+    {
+        if (DATA_START <= addr && addr < DATA_END) {
+            addr -= DATA_START;
+            data_mem[addr] = data;
+            return true;
+        } else
+            return false;
     }
 
     int num_regs(void)
