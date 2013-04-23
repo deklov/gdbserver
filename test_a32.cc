@@ -38,6 +38,10 @@ using namespace gdb;
 #define TEXT_END                (TEXT_START + TEXT_SIZE)
 #define TEXT_BRANCH_TARGET      (0x83a0)
 
+#define DATA_START              (0xa000)
+#define DATA_SIZE               (16)
+#define DATA_END                (DATA_START + DATA_SIZE)
+
 class FakeARMv7Context : public Context {
 public:
     FakeARMv7Context()
@@ -87,6 +91,7 @@ public:
 public:
     uint32_t regs[ARMv7_NUM_REGS];
     char *text_mem;
+    char data_mem[DATA_SIZE];
 };
 
 int
