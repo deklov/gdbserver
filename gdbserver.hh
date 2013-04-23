@@ -168,9 +168,9 @@ namespace gdb {
         char checksum_lsb_ascii(int checksum) const;
         char checksum_msb_ascii(int checksum) const;
 
-        void set_breakpoint(addr_type addr, addr_diff_type diff = 1);
-        void del_breakpoint(addr_type addr, addr_diff_type diff = 1);
-        bool has_breakpoint(addr_type addr, addr_diff_type diff = 1);
+        void set_breakpoint(addr_type addr, addr_diff_type size = 1);
+        void del_breakpoint(addr_type addr, addr_diff_type size = 1);
+        bool has_breakpoint(addr_type addr, addr_diff_type size = 1);
 
         void handle_g(const payload_type &payload);
         void handle_H(const payload_type &payload);
