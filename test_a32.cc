@@ -70,7 +70,6 @@ public:
     void wr_reg(int reg_no, unsigned long long value)
     {
         assert(0 <= reg_no && reg_no < ARMv7_NUM_REGS);
-        cout << "reg_no: " << reg_no << " value: " << value << endl;
         regs[reg_no] = value;
     }
 
