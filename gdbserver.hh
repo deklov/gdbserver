@@ -123,6 +123,8 @@ namespace gdb {
         /** */
         virtual void rd_reg(int reg_no) = 0;
         /** */
+        virtual void wr_reg(int reg_no, unsigned long long value) = 0;
+        /** */
         virtual void rd_mem(addr_type addr) = 0;
         /** */
         virtual bool wr_mem(addr_type addr, char data) = 0;
@@ -152,7 +154,6 @@ namespace gdb {
     typedef boost::shared_ptr<Context> context_ptr;
 
 
-    /** */
     class Server {
     public:
         typedef uint64_t addr_type;
@@ -208,7 +209,7 @@ namespace gdb {
         void handle_g(const payload_type &payload);
         void handle_H(const payload_type &payload);
         void handle_m(const payload_type &payload, bool write);
-        void handle_p(const payload_type &payload);
+        void handle_p(const payload_type &payload, bool write);
         void handle_q(const payload_type &payload);
         void handle_v(const payload_type &payload);
         void handle_X(const payload_type &payload);

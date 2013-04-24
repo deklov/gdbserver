@@ -62,7 +62,7 @@ bin_to_hex(const char *bin, size_t bin_size)
     return hex;
 }
 
-static unsigned long
+static unsigned long long
 str_to_int(const std::string &str, int base = 16)
 {
     /* TODO Handle different endianess */
@@ -136,7 +136,6 @@ Context::wr_mem_size(addr_type addr, size_type size, const char *data)
     bool success = true;
     for (int i = 0; i < size; i++)
         success = success && wr_mem(addr + i, data[i]);
-    cout << success << endl;
     return success;
 }
 
@@ -466,10 +465,18 @@ Server::handle_m(const payload_type &payload, bool write)
 }
 
 void
-Server::handle_p(const payload_type &payload)
+Server::handle_p(const payload_type &payload, bool write)
 {
-    int reg_no = str_to_int(payload.substr(1, payload.size() - 1));
-    send_payload(context->rd_one_reg(reg_no));
+    vector<string> tok = tokenize_str(payload.substr(1), "=");
+    EXPECT(tok.size() >= 1, "Packet format error (p/P)");
+
+    int reg_no = str_to_int(tok[0]);
+    if (!write)
+        send_payload(context->rd_one_reg(reg_no));
+    else {
+        context->wr_reg(reg_no, str_to_int(tok[1]));
+        send_ok();
+    }
 }
 
 void
@@ -568,7 +575,10 @@ Server::wait_for_command(void)
                 handle_m(payload, 1);
                 break;
             case 'p':
-                handle_p(payload);
+                handle_p(payload, 0);
+                break;
+            case 'P':
+                handle_p(payload, 1);
                 break;
             case 'q':
                 handle_q(payload);
