@@ -427,6 +427,13 @@ Server::has_breakpoint(addr_type addr, addr_diff_type size)
 }
 
 void
+Server::handle_D(const payload_type &payload)
+{
+    target_state = TARGET_STATE_DETACHED;
+    send_ok();
+}
+
+void
 Server::handle_g(const payload_type &payload)
 {
     send_payload(context->rd_all_regs());
@@ -562,6 +569,9 @@ Server::wait_for_command(void)
         cout << "wait_for_comman: payload: " << payload << endl;
 
         switch(payload[0]) {
+            case 'D':
+                handle_D(payload);
+                break;
             case 'g':
                 handle_g(payload);
                 break;
@@ -620,6 +630,10 @@ Server::update(addr_type next_pc)
 
                 wait_for_command();
             }
+            break;
+
+        case TARGET_STATE_DETACHED:
+            /* Do nothing */
             break;
 
         default:

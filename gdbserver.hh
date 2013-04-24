@@ -171,6 +171,7 @@ namespace gdb {
         enum {
             TARGET_STATE_HALTED = 0,
             TARGET_STATE_RUNNING,
+            TARGET_STATE_DETACHED,
         } target_state;
 
         static const size_t PACKET_SIZE = 1024;
@@ -206,6 +207,7 @@ namespace gdb {
         void del_breakpoint(addr_type addr, addr_diff_type size = 1);
         bool has_breakpoint(addr_type addr, addr_diff_type size = 1);
 
+        void handle_D(const payload_type &payload);
         void handle_g(const payload_type &payload);
         void handle_H(const payload_type &payload);
         void handle_m(const payload_type &payload, bool write);
