@@ -136,7 +136,7 @@ namespace gdb {
         const std::string& rd_one_reg(int reg_no);
         const std::string& rd_all_regs(void);
 
-        const std::string& rd_mem(addr_type addr, size_type size);
+        const std::string& rd_mem_size(addr_type addr, size_type size);
 
         bool wr_mem_size(addr_type addr, size_type size, const char *data);
 

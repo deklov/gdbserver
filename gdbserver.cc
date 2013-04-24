@@ -122,7 +122,7 @@ Context::rd_all_regs(void)
 }
 
 const std::string &
-Context::rd_mem(addr_type addr, size_type size)
+Context::rd_mem_size(addr_type addr, size_type size)
 {
     mem_str.clear();
     for (size_type i = 0; i < size; i++)
@@ -460,7 +460,7 @@ Server::handle_m(const payload_type &payload, bool write)
     addr_type size = str_to_int(tok[1]);
 
     if (!write)
-        send_payload(context->rd_mem(addr, size));
+        send_payload(context->rd_mem_size(addr, size));
     else {
         uint64_t data = str_to_int(tok[2]);
 
