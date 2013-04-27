@@ -38,7 +38,32 @@ using namespace boost;
 
 #include "gdbserver.hh"
 
-namespace gdb {
+
+class PayloadTokenizer {
+public:
+    PayloadTokenizer(std::string str, const char *sep_)
+    {
+        boost::char_separator<char> sep(sep_);
+        boost::tokenizer< boost::char_separator<char> > t(str, sep);
+
+        boost::tokenizer< boost::char_separator<char> >::iterator i = t.begin();
+        boost::tokenizer< boost::char_separator<char> >::iterator e = t.end();
+        for (; i != e; i++)
+            tok.push_back(*i);
+    }
+
+    size_t size(void) const
+    {
+        tok.size();
+    }
+
+    std::string operator[](int idx)
+    {
+        return tok[idx];
+    }
+private:
+    vector<string> tok;
+};
 
 /*
  * Helper functions
@@ -69,16 +94,9 @@ str_to_int(const std::string &str, int base = 16)
     return strtoull(str.c_str(), NULL, base);
 }
 
-/* TODO Cleanup and move elsewhere */
-static std::vector<std::string>
-tokenize_str(const std::string &str, const char *sep_)
-{
-    boost::char_separator<char> sep(sep_);
-    boost::tokenizer< boost::char_separator<char> > tokens(str, sep);
-    vector<string> p(tokens.begin(), tokens.end());
-    return p;
-}
- 
+
+namespace gdb {
+
 void
 Context::put_reg(uint16_t value)
 {
@@ -431,40 +449,47 @@ Server::wait_for_command(void)
                 break;
 
             case 'm':
-            case 'M':
                 do {
-                    vector<string> tok = tokenize_str(payload.substr(1), ",:");
-                    EXPECT(tok.size() >= 2, "Packet format error (m/M)");
+                    PayloadTokenizer tok(payload.substr(1), ",:");
+                    EXPECT(tok.size() == 2, "Packet format error. Command m.");
 
                     addr_type addr = str_to_int(tok[0]);
                     addr_type size = str_to_int(tok[1]);
 
-                    if (payload[0] == 'm') {
-                        send_payload(context->rd_mem_size(addr, size));
-                    } else {
-                        uint64_t data = str_to_int(tok[2]);
+                    send_payload(context->rd_mem_size(addr, size));
+                } while (0);
+                break;
 
-                        if (context->wr_mem_size(addr, size, (const char *)&data))
-                            send_ok();
-                        else
-                            send_error(14);
-                    }
+            case 'M':
+                do {
+                    PayloadTokenizer tok(payload.substr(1), ",:");
+                    EXPECT(tok.size() == 2, "Packet format error. Command M.");
+
+                    addr_type addr = str_to_int(tok[0]);
+                    addr_type size = str_to_int(tok[1]);
+                    uint64_t data = str_to_int(tok[2]);
+
+                    if (context->wr_mem_size(addr, size, (const char *)&data))
+                        send_ok();
+                    else
+                        send_error(14);
                 } while (0);
                 break;
 
             case 'p':
+                do {
+                    PayloadTokenizer tok(payload.substr(1), "=");
+                    EXPECT(tok.size() == 1, "Packet format error. Command p.");
+                    send_payload(context->rd_one_reg(str_to_int(tok[0])));
+                } while (0);
+                break;
+
             case 'P':
                 do {
-                    vector<string> tok = tokenize_str(payload.substr(1), "=");
-                    EXPECT(tok.size() >= 1, "Packet format error (p/P)");
-
-                    int reg_no = str_to_int(tok[0]);
-                    if (payload[0] = 'p')
-                        send_payload(context->rd_one_reg(reg_no));
-                    else {
-                        context->wr_reg(reg_no, str_to_int(tok[1]));
-                        send_ok();
-                    }
+                    PayloadTokenizer tok(payload.substr(1), "=");
+                    EXPECT(tok.size() == 2, "Packet format error. Command P.");
+                    context->wr_reg(str_to_int(tok[0]), str_to_int(tok[1]));
+                    send_ok();
                 } while (0);
                 break;
 
@@ -510,7 +535,7 @@ Server::wait_for_command(void)
             case 'z':
             case 'Z':
                 if (payload.substr(1, 1) == "0") {
-                    vector<string> tok = tokenize_str(payload.substr(2), ",");
+                    PayloadTokenizer tok(payload.substr(2), ",");
                     EXPECT(tok.size() == 2, "Packet format error (Z0)");
 
                     uint64_t addr = str_to_int(tok[0]);
