@@ -116,7 +116,7 @@ const std::string &
 Context::rd_all_regs(void)
 {
     reg_str.clear();
-    for (int i = 0; i < num_regs(); i++)
+    for (int i = 0; i < num_regs; i++)
         rd_reg(i);
     return reg_str;
 }

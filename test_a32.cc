@@ -45,6 +45,7 @@ using namespace gdb;
 class FakeARMv7Context : public Context {
 public:
     FakeARMv7Context()
+    : Context(ARMv7_NUM_REGS)
     {
         static char text_mem_[] = {
             0x04, 0xb0, 0x2d, 0xe5,  /* 8394:  push  {fp}            */

@@ -120,6 +120,9 @@ namespace gdb {
         typedef uint64_t addr_type;
         typedef uint64_t size_type;
 
+        Context(int num_regs)
+        : num_regs(num_regs) { }
+
         /** */
         virtual void rd_reg(int reg_no) = 0;
         /** */
@@ -128,8 +131,6 @@ namespace gdb {
         virtual void rd_mem(addr_type addr) = 0;
         /** */
         virtual bool wr_mem(addr_type addr, char data) = 0;
-        /** */
-        virtual int num_regs(void) = 0;
         /** */
         virtual void set_breakpoint(addr_type addr, size_type size = 1) = 0;
         /** */
@@ -156,6 +157,8 @@ namespace gdb {
     private:
         std::string reg_str;
         std::string mem_str;
+
+        int num_regs;
     };
     typedef boost::shared_ptr<Context> context_ptr;
 
