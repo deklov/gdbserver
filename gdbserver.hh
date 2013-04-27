@@ -189,6 +189,8 @@ namespace gdb {
 
         void wait_for_command(void);
 
+        bool extract_payload(const packet_type &packet, payload_type &payload) const;
+
         void send_payload(const payload_type &payload, int tries = 1) const;
         void send_packet(const packet_type &packet) const;
         void send_packet(const char *buf, size_t buf_size) const;
@@ -196,6 +198,10 @@ namespace gdb {
         void recv_payload(payload_type &payload, int tries = 1) const;
         void recv_packet(payload_type &payload) const;
         size_t recv_packet(char *buf, size_t buf_size) const;
+
+        int compute_checksum(const payload_type &payload) const;
+        char checksum_lsb_ascii(int checksum) const;
+        char checksum_msb_ascii(int checksum) const;
 
         void send_ack(void) const;
         void send_nak(void) const;
@@ -207,24 +213,6 @@ namespace gdb {
         void send_empty(void) const;
         void send_error(int error) const;
         void send_trapped(void) const;
-
-        bool extract_payload(const packet_type &, payload_type &) const;
-
-        int compute_checksum(const payload_type &payload) const;
-        char checksum_lsb_ascii(int checksum) const;
-        char checksum_msb_ascii(int checksum) const;
-
-
-        void handle_D(const payload_type &payload);
-        void handle_g(const payload_type &payload);
-        void handle_H(const payload_type &payload);
-        void handle_m(const payload_type &payload, bool write);
-        void handle_p(const payload_type &payload, bool write);
-        void handle_q(const payload_type &payload);
-        void handle_v(const payload_type &payload);
-        void handle_X(const payload_type &payload);
-        void handle_z(const payload_type &payload, bool set);
-        void handle_qm(const payload_type &payload);
 
     private:
         context_ptr context;

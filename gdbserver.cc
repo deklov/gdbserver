@@ -400,139 +400,6 @@ Server::checksum_msb_ascii(int csum) const
 }
 
 void
-Server::handle_D(const payload_type &payload)
-{
-    target_state = TARGET_STATE_DETACHED;
-    send_ok();
-}
-
-void
-Server::handle_g(const payload_type &payload)
-{
-    send_payload(context->rd_all_regs());
-}
-
-void
-Server::handle_H(const payload_type &payload)
-{
-    if (payload.substr(1, 1) == "g")
-        send_ok();
-    else if (payload.substr(1, 1) == "c")
-        send_ok();
-    else
-        THROW("Unsupported 'H' command");
-}
-
-void
-Server::handle_m(const payload_type &payload, bool write)
-{
-    vector<string> tok = tokenize_str(payload.substr(1), ",:");
-    EXPECT(tok.size() >= 2, "Packet format error (m/M)");
-
-    addr_type addr = str_to_int(tok[0]);
-    addr_type size = str_to_int(tok[1]);
-
-    if (!write)
-        send_payload(context->rd_mem_size(addr, size));
-    else {
-        uint64_t data = str_to_int(tok[2]);
-
-        if (context->wr_mem_size(addr, size, (const char *)&data))
-            send_ok();
-        else
-            send_error(14);
-    }
-}
-
-void
-Server::handle_p(const payload_type &payload, bool write)
-{
-    vector<string> tok = tokenize_str(payload.substr(1), "=");
-    EXPECT(tok.size() >= 1, "Packet format error (p/P)");
-
-    int reg_no = str_to_int(tok[0]);
-    if (!write)
-        send_payload(context->rd_one_reg(reg_no));
-    else {
-        context->wr_reg(reg_no, str_to_int(tok[1]));
-        send_ok();
-    }
-}
-
-void
-Server::handle_q(const payload_type &payload)
-{
-    if (payload.substr(1, 9) == "Supported")
-        send_payload("PacketSize=1024;qXfer:features:read+");
-
-    else if (payload.substr(1, 7) == "Offsets")
-        send_payload("Text=0;Data=0;Bss=0");
-
-    else if (payload.substr(1, 8) == "Attached")
-        send_payload("");
-
-    else if (payload.substr(1, 1) == "C")
-        send_payload("QC1");
-
-    else if (payload.substr(1, 8) == "Symbol::")
-        send_payload("OK");
-
-    else if (payload.substr(1, 8) == "TStatus")
-        send_empty();
-
-    else if (payload.substr(1, 29) == "Xfer:features:read:target.xml")
-        send_payload("l" + context->xml_core());
-
-    else
-        THROW("Unsupported 'q' command");
-}
-
-void
-Server::handle_v(const payload_type &payload)
-{
-    if (payload.substr(1, 5) == "Cont?")
-        send_payload("vCont;s;S;c;C");
-    else if (payload.substr(1, 6) == "Cont;c")
-        target_state = TARGET_STATE_RUNNING;
-    else
-        THROW("Unsupported 'v' command");
-}
-
-void
-Server::handle_X(const payload_type &payload)
-{
-    /* This tells the client to use the M command instead */
-    send_empty();
-}
-
-void
-Server::handle_z(const payload_type &payload, bool set)
-{
-    if (payload.substr(1, 1) == "0") {
-        vector<string> tok = tokenize_str(payload.substr(2), ",");
-        EXPECT(tok.size() == 2, "Packet format error (Z0)");
-
-        uint64_t addr = str_to_int(tok[0]);
-        uint64_t size = str_to_int(tok[1]);
-
-        if (set) 
-            context->set_breakpoint(addr, size);
-        else
-            context->del_breakpoint(addr, size);
-
-        send_ok();
-    } else
-        THROW("Unsupported 'z' command");
-}
-
-void
-Server::handle_qm(const payload_type &payload)
-{
-    send_trapped();
-}
-
-
-void
 Server::wait_for_command(void)
 {
     do {
@@ -543,44 +410,133 @@ Server::wait_for_command(void)
 
         switch(payload[0]) {
             case 'D':
-                handle_D(payload);
+                target_state = TARGET_STATE_DETACHED;
+                send_ok();
                 break;
+
             case 'g':
-                handle_g(payload);
+                send_payload(context->rd_all_regs());
                 break;
+
             case 'H':
-                handle_H(payload);
+                if (payload.substr(1, 1) == "g") {
+                    send_ok();
+
+                } else if (payload.substr(1, 1) == "c") {
+                    send_ok();
+
+                } else {
+                    THROW("Unsupported 'H' command");
+                }
                 break;
+
             case 'm':
-                handle_m(payload, 0);
-                break;
             case 'M':
-                handle_m(payload, 1);
+                do {
+                    vector<string> tok = tokenize_str(payload.substr(1), ",:");
+                    EXPECT(tok.size() >= 2, "Packet format error (m/M)");
+
+                    addr_type addr = str_to_int(tok[0]);
+                    addr_type size = str_to_int(tok[1]);
+
+                    if (payload[0] == 'm') {
+                        send_payload(context->rd_mem_size(addr, size));
+                    } else {
+                        uint64_t data = str_to_int(tok[2]);
+
+                        if (context->wr_mem_size(addr, size, (const char *)&data))
+                            send_ok();
+                        else
+                            send_error(14);
+                    }
+                } while (0);
                 break;
+
             case 'p':
-                handle_p(payload, 0);
-                break;
             case 'P':
-                handle_p(payload, 1);
+                do {
+                    vector<string> tok = tokenize_str(payload.substr(1), "=");
+                    EXPECT(tok.size() >= 1, "Packet format error (p/P)");
+
+                    int reg_no = str_to_int(tok[0]);
+                    if (payload[0] = 'p')
+                        send_payload(context->rd_one_reg(reg_no));
+                    else {
+                        context->wr_reg(reg_no, str_to_int(tok[1]));
+                        send_ok();
+                    }
+                } while (0);
                 break;
+
             case 'q':
-                handle_q(payload);
+                if (payload.substr(1, 9) == "Supported") {
+                    send_payload("PacketSize=1024;qXfer:features:read+");
+
+                } else if (payload.substr(1, 7) == "Offsets") {
+                    send_payload("Text=0;Data=0;Bss=0");
+
+                } else if (payload.substr(1, 8) == "Attached") {
+                    send_empty();
+
+                } else if (payload.substr(1, 1) == "C") {
+                    send_payload("QC1");
+
+                } else if (payload.substr(1, 8) == "Symbol::") {
+                    send_ok();
+
+                } else if (payload.substr(1, 8) == "TStatus") {
+                    send_empty();
+
+                } else if (payload.substr(1, 29) == "Xfer:features:read:target.xml") {
+                    send_payload("l" + context->xml_core());
+
+                } else {
+                    THROW("Unsupported 'q' command");
+                }
                 break;
+
             case 'v':
-                handle_v(payload);
+                if (payload.substr(1, 5) == "Cont?") {
+                    send_payload("vCont;s;S;c;C");
+
+                } else if (payload.substr(1, 6) == "Cont;c") {
+                    target_state = TARGET_STATE_RUNNING;
+
+                } else {
+                    THROW("Unsupported 'v' command");
+                }
                 break;
+
             case 'z':
-                handle_z(payload, 0);
-                break;
             case 'Z':
-                handle_z(payload, 1);
+                if (payload.substr(1, 1) == "0") {
+                    vector<string> tok = tokenize_str(payload.substr(2), ",");
+                    EXPECT(tok.size() == 2, "Packet format error (Z0)");
+
+                    uint64_t addr = str_to_int(tok[0]);
+                    uint64_t size = str_to_int(tok[1]);
+
+                    if (payload[0] == 'z') 
+                        context->del_breakpoint(addr, size);
+                    else
+                        context->set_breakpoint(addr, size);
+
+                    send_ok();
+                } else {
+                    THROW("Unsupported 'z' command");
+                }
                 break;
+
             case 'X':
-                handle_X(payload);
+                /* We do not support binary data transfers */
+                send_empty();
                 break;
+
             case '?':
-                handle_qm(payload);
+                /* We are always stopped by a SIGTRAP */
+                send_trapped();
                 break;
+
             default:
                 THROW("Unsupported command");
                 break;
