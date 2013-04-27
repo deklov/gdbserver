@@ -116,6 +116,7 @@ namespace gdb {
 
 
     class Context {
+        friend class Server;
     public:
         typedef uint64_t addr_type;
         typedef uint64_t size_type;
@@ -137,15 +138,8 @@ namespace gdb {
         virtual void del_breakpoint(addr_type addr, size_type size = 1) = 0;
         /** */
         virtual bool has_breakpoint(addr_type addr, size_type size = 1) = 0;
-
+        /** */
         virtual const std::string& xml_core(void) = 0;
-
-        const std::string& rd_one_reg(int reg_no);
-        const std::string& rd_all_regs(void);
-
-        const std::string& rd_mem_size(addr_type addr, size_type size);
-
-        bool wr_mem_size(addr_type addr, size_type size, const char *data);
 
     protected:
         void put_reg(uint16_t value);
@@ -153,6 +147,14 @@ namespace gdb {
         void put_reg(uint64_t value);
 
         void put_mem(char value);
+
+    private:
+        const std::string& rd_one_reg(int reg_no);
+        const std::string& rd_all_regs(void);
+
+        const std::string& rd_mem_size(addr_type addr, size_type size);
+
+        bool wr_mem_size(addr_type addr, size_type size, const char *data);
 
     private:
         std::string reg_str;
