@@ -192,11 +192,9 @@ namespace gdb {
         bool extract_payload(const packet_type &packet, payload_type &payload) const;
 
         void send_payload(const payload_type &payload, int tries = 1) const;
-        void send_packet(const packet_type &packet) const;
         void send_packet(const char *buf, size_t buf_size) const;
 
         void recv_payload(payload_type &payload, int tries = 1) const;
-        void recv_packet(payload_type &payload) const;
         size_t recv_packet(char *buf, size_t buf_size) const;
 
         int compute_checksum(const payload_type &payload) const;

@@ -270,7 +270,16 @@ Server::recv_payload(payload_type &payload, int tries) const
     packet_type packet;
 
     do {
-        recv_packet(packet);
+        char p[PACKET_SIZE + 1];
+        ssize_t size;
+
+        size = recv_packet(p, PACKET_SIZE);
+        EXPECT_ERRNO(size != -1);
+        p[size] = '\0';
+
+        assert(packet.empty());
+        packet = p;
+
         if (extract_payload(packet, payload))
             break;
         send_nak();
@@ -279,20 +288,6 @@ Server::recv_payload(payload_type &payload, int tries) const
     if (!tries)
         THROW("Failed to receive valid packet.");
     send_ack();
-}
-
-void
-Server::recv_packet(packet_type &packet) const
-{
-    char p[PACKET_SIZE + 1];
-    ssize_t size;
-
-    size = recv_packet(p, PACKET_SIZE);
-    EXPECT_ERRNO(size != -1);
-    p[size] = '\0';
-
-    assert(packet.empty());
-    packet = p;
 }
 
 size_t
