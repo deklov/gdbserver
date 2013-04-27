@@ -57,7 +57,7 @@ public:
         tok.size();
     }
 
-    std::string operator[](int idx)
+    std::string operator[](int idx) const
     {
         return tok[idx];
     }
