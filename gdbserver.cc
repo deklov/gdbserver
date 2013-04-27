@@ -213,6 +213,7 @@ Server::send_payload(const payload_type &payload, int tries) const
 {
     std::string packet;
 
+    /* Build packet */
     packet.push_back('$');
     do {
         payload_type::const_iterator i = payload.begin();
@@ -340,6 +341,29 @@ Server::extract_payload(const packet_type &packet, payload_type &payload) const
     return true;
 }
 
+int
+Server::compute_checksum(const payload_type &payload) const
+{
+    int checksum = 0;
+    payload_type::const_iterator i = payload.begin();
+    payload_type::const_iterator e = payload.end();
+    for (; i != e; i++)
+        checksum += *i;
+    return checksum % 256;
+}
+
+char
+Server::checksum_lsb_ascii(int csum) const
+{
+    return int_to_hex(csum >> 0 & 0xf);
+}
+
+char
+Server::checksum_msb_ascii(int csum) const
+{
+    return int_to_hex(csum >> 4 & 0xf);
+}
+
 void
 Server::send_ack(void) const
 {
@@ -394,29 +418,6 @@ Server::send_error(int error) const
     send_payload(ss.str());
 }
 
-int
-Server::compute_checksum(const payload_type &payload) const
-{
-    int checksum = 0;
-    payload_type::const_iterator i = payload.begin();
-    payload_type::const_iterator e = payload.end();
-    for (; i != e; i++)
-        checksum += *i;
-    return checksum % 256;
-}
-
-char
-Server::checksum_lsb_ascii(int csum) const
-{
-    return int_to_hex(csum >> 0 & 0xf);
-}
-
-char
-Server::checksum_msb_ascii(int csum) const
-{
-    return int_to_hex(csum >> 4 & 0xf);
-}
-
 void
 Server::wait_for_command(void)
 {
@@ -455,7 +456,6 @@ Server::wait_for_command(void)
 
                     addr_type addr = str_to_int(tok[0]);
                     addr_type size = str_to_int(tok[1]);
-
                     send_payload(context->rd_mem_size(addr, size));
                 } while (0);
                 break;
@@ -468,7 +468,6 @@ Server::wait_for_command(void)
                     addr_type addr = str_to_int(tok[0]);
                     addr_type size = str_to_int(tok[1]);
                     uint64_t data = str_to_int(tok[2]);
-
                     if (context->wr_mem_size(addr, size, (const char *)&data))
                         send_ok();
                     else
