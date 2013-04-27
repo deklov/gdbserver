@@ -400,33 +400,6 @@ Server::checksum_msb_ascii(int csum) const
 }
 
 void
-Server::set_breakpoint(addr_type addr, addr_diff_type size)
-{
-    for (addr_diff_type i = 0; i < size; i ++) {
-        assert(breakpoint_set.count(addr + i) == 0);
-        breakpoint_set.insert(addr + i);
-    }
-}
-
-void
-Server::del_breakpoint(addr_type addr, addr_diff_type size)
-{
-    for (addr_diff_type i = 0; i < size; i ++) {
-        assert(breakpoint_set.count(addr + i) == 1);
-        breakpoint_set.erase(addr + i);
-    }
-}
-
-bool
-Server::has_breakpoint(addr_type addr, addr_diff_type size)
-{
-    int c = 0;
-    for (addr_diff_type i = 0; i < size; i++)
-        c += breakpoint_set.count(addr + i);
-    return c > 0;
-}
-
-void
 Server::handle_D(const payload_type &payload)
 {
     target_state = TARGET_STATE_DETACHED;
@@ -543,9 +516,9 @@ Server::handle_z(const payload_type &payload, bool set)
         uint64_t size = str_to_int(tok[1]);
 
         if (set) 
-            set_breakpoint(addr, size);
+            context->set_breakpoint(addr, size);
         else
-            del_breakpoint(addr, size);
+            context->del_breakpoint(addr, size);
 
         send_ok();
     } else
@@ -624,7 +597,7 @@ Server::update(addr_type next_pc)
             break;
 
         case TARGET_STATE_RUNNING:
-            if (breakpoint_set.count(next_pc)) {
+            if (context->has_breakpoint(next_pc)) {
                 target_state = TARGET_STATE_HALTED;
                 send_trapped(); /* Let the client know that we stopped */
 

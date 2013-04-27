@@ -131,6 +131,12 @@ namespace gdb {
         /** */
         virtual int num_regs(void) = 0;
         /** */
+        virtual void set_breakpoint(addr_type addr, size_type size = 1) = 0;
+        /** */
+        virtual void del_breakpoint(addr_type addr, size_type size = 1) = 0;
+        /** */
+        virtual bool has_breakpoint(addr_type addr, size_type size = 1) = 0;
+
         virtual const std::string& xml_core(void) = 0;
 
         const std::string& rd_one_reg(int reg_no);
@@ -203,9 +209,6 @@ namespace gdb {
         char checksum_lsb_ascii(int checksum) const;
         char checksum_msb_ascii(int checksum) const;
 
-        void set_breakpoint(addr_type addr, addr_diff_type size = 1);
-        void del_breakpoint(addr_type addr, addr_diff_type size = 1);
-        bool has_breakpoint(addr_type addr, addr_diff_type size = 1);
 
         void handle_D(const payload_type &payload);
         void handle_g(const payload_type &payload);
@@ -220,9 +223,6 @@ namespace gdb {
 
     private:
         context_ptr context;
-
-        typedef std::set<addr_type> breakpoint_set_type;
-        breakpoint_set_type breakpoint_set;
 
         int socket_fd;
     };

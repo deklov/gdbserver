@@ -105,8 +105,38 @@ public:
         return armv7_xml_core;
     }
 
+    void set_breakpoint(addr_type addr, size_type size)
+    {
+        for (size_type i = 0; i < size; i ++) {
+            assert(breakpoint_set.count(addr + i) == 0);
+            breakpoint_set.insert(addr + i);
+        }
+    }
+
+    void del_breakpoint(addr_type addr, size_type size)
+    {
+        for (size_type i = 0; i < size; i ++) {
+            assert(breakpoint_set.count(addr + i) == 1);
+            breakpoint_set.erase(addr + i);
+        }
+    }
+
+    bool has_breakpoint(addr_type addr, size_type size)
+    {
+        int c = 0;
+        for (size_type i = 0; i < size; i++)
+            c += breakpoint_set.count(addr + i);
+        return c > 0;
+    }
+
+
 public:
     uint32_t regs[ARMv7_NUM_REGS];
+
+private:
+    typedef std::set<addr_type> breakpoint_set_t;
+    breakpoint_set_t breakpoint_set;
+
     char *text_mem;
     char data_mem[DATA_SIZE];
 };
